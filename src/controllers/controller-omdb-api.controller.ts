@@ -1,21 +1,39 @@
 import {inject} from '@loopback/context';
-import {get, param} from '@loopback/rest';
+import {get, post, param, getModelSchemaRef, requestBody} from '@loopback/rest';
 import {ServiceOmdbApi} from '../services';
+import {Historymodel} from '../models';
+import {HistorymodelRepository} from '../repositories';
 
 export class ControllerOmdbApiController {
   constructor(
     @inject('services.ServiceOmdbApi')
-    protected omdbapiService: ServiceOmdbApi,
+    protected omdbapiService: ServiceOmdbApi
   ) {}
 
-  @get('/query/{title}')
+  @post('/query', {
+    responses: {
+      200: {
+        description: "post query",
+        content: { 'application/json': { schema: getModelSchemaRef(Historymodel) } }
+      }
+    }
+  })
   //ts-lint:disable-next-line: no-any
-  async query(@param.path.string('title') title: string): Promise<any> 
+  async query(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Historymodel, { exclude: ['id']})
+        }
+      }
+    })
+    history: Omit<Historymodel, 'id'>
+  ): Promise<Historymodel> 
   {
-    const titleArray: Array<string> = title.split(' ');
-    const requestTitle: string = titleArray.join('+');
-    console.log(`Calling OmdbApi Service for movie/show: ${title}`);
-    return await this.callOmdbapi(requestTitle);
+    // return history.movie_title;
+    console.log(`Calling OmdbApi Service for movie/show: ${history.movie_title}`);
+    let data = await this.callOmdbapi(history.movie_title)
+    return data;
   }
 
   async callOmdbapi(title: string): Promise<any> 
